@@ -1,0 +1,231 @@
+"""
+4-window Bing automation (Edge) — robust version (fixed)
+- Thread-safe progress logging
+- Safer search box detection
+- Valid link clicks only
+- Edge + Selenium compatibility ensured
+"""
+
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.edge.service import Service
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+import time, random, threading, winsound, logging, os
+
+# ---------- CONFIG ----------
+DRIVER_PATH = r"C:\Users\Admin\python code\repos\msedgedriver.exe"
+NUM_WINDOWS = 2
+START_URL = "https://www.bing.com"
+LOG_FILE = "bing_automation.log"
+TEST_SINGLE = False   # set True to run only one window for debugging
+# ----------------------------
+
+# --- queries (your full list) ---
+custom_queries = [
+    "Weather today", "updates of cbse 2025", "justin beiber new song", "weather tomorrow",
+    "next date of match", "football results", "curiosity lab details",
+    "can I get atomic habits for free", "new movies", "planetary placements today",
+    "Elon Musk net worth today", "who is the best dog new article", "stock market today",
+    "current affairs", "donald latest affairs", "YouTube top videos",
+    "dogs vs cats who won?", "top 10 games in 2025", "best science facts",
+    "AI news", "weirdest animals", "top books 2024", "solar storm today",
+    "historical event today", "Nobel prize recent", "wildlife photography 2025",
+    "horror movie list", "funny memes 2025", "how to focus better",
+    "trending sports India", "mars retrograde meaning", "sun in 10th house effects",
+    "venus and mars conjunction", "jupiter in 2nd house results", "rahu aspects",
+    "saturn return age", "top anime 2025", "India economy update", "how to improve memory",
+    "productivity hacks for students", "weird space discoveries", "mysterious places on Earth",
+    "best free AI tools", "chatgpt vs gemini", "new technology 2025",
+    "top universities in the world", "most expensive cars 2025", "new inventions this year",
+    "how to learn coding fast", "gaming laptops under 70000", "electric bike price in India",
+    "most powerful animals", "latest Bollywood news", "strange facts about oceans",
+    "top 10 richest people", "best tourist places in India", "most dangerous roads",
+    "ancient alien theories", "nasa's next mission", "top apps for students",
+    "how to stay motivated", "famous unsolved mysteries", "best brain games online",
+    "most viewed TikTok video 2025", "best Netflix shows 2025", "health tips for students"
+]
+
+# --- Logging setup ---
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s  %(levelname)-7s  %(message)s",
+    handlers=[
+        logging.FileHandler(LOG_FILE, encoding="utf-8"),
+        logging.StreamHandler()
+    ]
+)
+
+# --- Thread-safe file lock ---
+file_lock = threading.Lock()
+
+# --- helpers ---
+def human_type(element, text):
+    for ch in text:
+        element.send_keys(ch)
+        time.sleep(random.uniform(0.05, 0.15))  # slightly slower for safety
+
+def safe_get(driver, url, retries=2, wait_secs=2):
+    for attempt in range(1, retries + 1):
+        try:
+            driver.get(url)
+            return True
+        except Exception as e:
+            logging.warning(f"safe_get: attempt {attempt} failed: {e}")
+            time.sleep(wait_secs)
+    return False
+
+# --- search worker (bing only) ---
+def bing_worker(driver, queries, session_id):
+    wait = WebDriverWait(driver, 12)
+    # shuffle queries per thread for safety
+    random.shuffle(queries)
+    for i, q in enumerate(queries, 1):
+        try:
+            logging.info(f"[{session_id}] ({i}/{len(queries)}) Searching: {q}")
+            if not safe_get(driver, START_URL):
+                logging.error(f"[{session_id}] Could not load {START_URL}, skipping query.")
+                continue
+
+            # try multiple ways to locate search box
+            search_box = None
+            try:
+                search_box = wait.until(EC.presence_of_element_located((By.NAME, "q")))
+            except:
+                try:
+                    search_box = driver.find_element(By.XPATH, '//input[@type="search"]')
+                except:
+                    try:
+                        search_box = driver.find_element(By.ID, "sb_form_q")
+                    except Exception as e:
+                        logging.warning(f"[{session_id}] search box not found: {e}. Skipping query.")
+                        time.sleep(random.uniform(3,6))
+                        continue
+
+            search_box.clear()
+            human_type(search_box, q)
+
+            # submit search
+            if random.random() < 0.6:
+                search_box.send_keys(Keys.RETURN)
+            else:
+                try:
+                    btn = driver.find_element(By.ID, "sb_form_go")
+                    btn.click()
+                except:
+                    search_box.send_keys(Keys.RETURN)
+
+            # wait and scroll
+            time.sleep(random.uniform(3.5, 6.0))
+            for _ in range(random.randint(1, 3)):
+                driver.execute_script("window.scrollBy(0, arguments[0]);", random.randint(250, 900))
+                time.sleep(random.uniform(0.8, 2.2))
+
+            # random click on result (40% chance)
+            if random.random() < 0.4:
+                try:
+                    links = driver.find_elements(By.XPATH, '//li[contains(@class,"b_algo")]//a')
+                    links = [a for a in links if a.get_attribute("href") and a.get_attribute("href").startswith("http")]
+                    if links:
+                        a = random.choice(links)
+                        driver.execute_script("arguments[0].scrollIntoView({block:'center'});", a)
+                        time.sleep(0.6)
+                        a.click()
+                        logging.info(f"[{session_id}] clicked search result")
+                        time.sleep(random.uniform(5.0, 11.0))
+                        driver.back()
+                        time.sleep(random.uniform(1.8, 3.5))
+                except Exception as e:
+                    logging.warning(f"[{session_id}] click error: {e}")
+
+            # occasional longer pause
+            if i % random.randint(6, 12) == 0:
+                p = random.uniform(12, 28)
+                logging.info(f"[{session_id}] pausing {p:.1f}s")
+                time.sleep(p)
+            else:
+                time.sleep(random.uniform(4.5, 9.5))
+
+            # thread-safe progress logging
+            with file_lock:
+                with open("search_progress.txt", "a", encoding="utf-8") as f:
+                    f.write(f"{session_id}\t{i}\t{q}\n")
+
+        except Exception as e:
+            logging.exception(f"[{session_id}] Unexpected error on query '{q}': {e}")
+            time.sleep(random.uniform(3,7))
+
+    logging.info(f"[{session_id}] Finished all assigned queries.")
+
+# --- driver factory using manual driver path ---
+def get_driver_manual(driver_path):
+    if not os.path.exists(driver_path):
+        raise FileNotFoundError(f"EdgeDriver not found at: {driver_path}")
+    options = webdriver.EdgeOptions()
+    options.add_argument("--start-maximized")
+    service = Service(driver_path)
+    return webdriver.Edge(service=service, options=options)
+
+# ---------- MAIN ----------
+def main():
+    if TEST_SINGLE:
+        logging.info("TEST_SINGLE enabled — running one window to debug.")
+        d = get_driver_manual(DRIVER_PATH)
+        logging.info("Open the browser. Please log in if you need to.")
+        safe_get(d, START_URL)
+        input("Press Enter to quit the test browser...")
+        d.quit()
+        return
+
+    # create drivers
+    drivers = []
+    for i in range(NUM_WINDOWS):
+        try:
+            d = get_driver_manual(DRIVER_PATH)
+            drivers.append(d)
+            time.sleep(0.5)
+        except Exception as e:
+            logging.exception(f"Failed to start driver #{i+1}: {e}")
+            for dd in drivers:
+                try: dd.quit()
+                except: pass
+            return
+
+    logging.info(f"{len(drivers)} Edge windows opened. Please log in to each Microsoft account now.")
+    input("After manual login in all windows press Enter to start searches...")
+
+    # prepare queries per window
+    q_copies = [custom_queries[:] for _ in range(len(drivers))]
+
+    # start threads staggered
+    threads = []
+    for idx, (drv, qs) in enumerate(zip(drivers, q_copies), start=1):
+        sid = f"Window{idx}"
+        t = threading.Thread(target=bing_worker, args=(drv, qs, sid), daemon=False)
+        threads.append(t)
+        t.start()
+        time.sleep(random.uniform(1.0, 3.0))
+
+    for t in threads:
+        t.join()
+
+    # close browsers
+    for d in drivers:
+        try:
+            d.quit()
+        except:
+            pass
+
+    # beep to notify completion
+    try:
+        winsound.Beep(3000, 400); time.sleep(0.2)
+        winsound.Beep(4000, 700); time.sleep(0.2)
+        winsound.Beep(2000, 500)
+    except:
+        pass
+
+    logging.info("All windows finished.")
+
+if __name__ == "__main__":
+    main()
