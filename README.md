@@ -1,4 +1,6 @@
 PYTHON BING REWARDS
+
+
 Automate Microsoft Bing Rewards searches and earn gift cards faster.
 
 What it does
