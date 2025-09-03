@@ -1,59 +1,79 @@
-# PYTHON.BINGrewards
-Get a chance to get the bing rewards hack
+PYTHON.BINGrewards
 
+Automate Microsoft Bing Rewards searches and earn gift cards faster.
 
-you will need two accounts in google and ms rewards(just not used before and got banned😋)
-log in manuallly and keep going till about 3 months and get 1500INR to 2000 INR in your amazon wallet
+What it does
 
+Automates daily Bing searches with Selenium
 
+Works with Microsoft Rewards + Google account
 
+Potentially earn ₹1500 – ₹2000 Amazon balance every 3 months
 
-✅ Install via pip (Command Prompt)
+Requirements
 
-Run these once in CMD:
+Python 3.10+
+
+Microsoft Edge browser
+
+Microsoft Rewards account (fresh, not banned😋)
+
+Google account
+
+Installation
+Install via pip
+
+Run these in Command Prompt:
 
 pip install selenium
 
 
-(Optional but useful)
+Optional but recommended:
 
 pip install webdriver-manager
 
 
-→ This auto-downloads the correct Edge driver when Selenium runs (so you don’t have to keep updating manually).
+This auto-downloads the correct Edge driver when Selenium runs (no manual updates needed).
 
-✅ Manual Download (if not using webdriver-manager)
+Manual Driver Setup (if not using webdriver-manager)
 
-You need Microsoft Edge WebDriver (msedgedriver.exe) that matches your installed Edge browser version exactly.
+Check your Edge browser version:
 
-Check your Edge version:
-
-Open Edge → click ... → Help and Feedback → About Microsoft Edge
+Open Edge → ... menu → Help & Feedback → About Microsoft Edge
 
 Example: Version 139.0.xxxx.x
 
-Download the matching Edge WebDriver from Microsoft’s official site:
-👉 https://developer.microsoft.com/en-us/microsoft-edge/tools/webdriver/
+Download matching Edge WebDriver from Microsoft:
+Download Edge WebDriver
 
-Extract msedgedriver.exe and place it into:
+Extract msedgedriver.exe and place it in:
 
 C:\Users\Admin\python code\repos\
 
 
-(or any folder, but then update your script’s DRIVER_PATH accordingly)
+(or any folder, but update your script’s DRIVER_PATH accordingly)
 
-✅ Nothing Else Needed
+Dependencies
 
-time, random, threading → built into Python (no install needed).
+No extra installs needed:
 
-winsound → built into Python on Windows (no install needed).
+time, random, threading → built into Python
 
-⚡ So in short:
+winsound → built into Python (Windows only)
 
-At minimum: pip install selenium
+Quick Start
+
+At minimum:
+
+pip install selenium
+
 
 Then either:
 
-Use webdriver-manager (easy, no manual driver updates), OR
+Use webdriver-manager (easy, auto-updates driver), OR
 
-Manually download and place msedgedriver.exe that matches your Edge version
+Manually download and place msedgedriver.exe
+
+Support
+
+If this project helped you, consider supporting via GitHub Sponsors.
