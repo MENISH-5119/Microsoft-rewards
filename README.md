@@ -1,5 +1,13 @@
 # PYTHON.BINGrewards
 Get a chance to get the bing rewards hack
+
+
+you will need two accounts in google and ms rewards(just not used before and got banned😋)
+log in manuallly and keep going till about 3 months and get 1500INR to 2000 INR in your amazon wallet
+
+
+
+
 ✅ Install via pip (Command Prompt)
 
 Run these once in CMD:
